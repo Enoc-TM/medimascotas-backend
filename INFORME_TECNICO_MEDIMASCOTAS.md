@@ -1,167 +1,114 @@
-# Walkthrough: API REST MediMascotas (Node.js + Express 5)
+# INFORME TÉCNICO: API REST MEDIMASCOTAS (Node.js + Express 5 + MySQL)
 
-Este documento resume la implementación completa, la definición de endpoints, la estrategia de ramas en Git y la verificación de pruebas del proyecto **MediMascotas** para la Corporación Universitaria Minuto de Dios (UNIMINUTO).
-
----
-
-## 1. Resumen de lo Realizado
-
-1. **Estructura Base Idéntica a la Clase:**
-   - Proyecto Node.js en modo CommonJS (`"type": "commonjs"`).
-   - Dependencias de producción: `express: ^5.2.1`, `dotenv: ^17.4.2`.
-   - Dependencias de desarrollo: `nodemon: ^3.1.14`.
-   - Archivo `.env` configurado con `PORT=3000`.
-   - Archivo `index.js` en la raíz orquestando la escucha en el puerto 3000.
-   - Servidor `src/app.js` configurado con middlewares `express.json()` y `express.urlencoded()`.
-
-2. **Estrategia Git y Commits Implementados:**
-   - **Commit 1 en `main`:** Base limpia del proyecto **sin ningún router y sin ningún controlador**, tal como fue solicitado para la entrega inicial del líder del equipo:
-     ```
-     [main (root-commit) 0f5b685] feat: estructura base inicial sin routers ni controladores
-     ```
-   - **Rama de Enoc:** Creación y activación de la rama de trabajo del líder:
-     ```bash
-     git checkout -b feature/enoc-endpoints-medimascotas
-     ```
-   - **Commit 2 en `feature/enoc-endpoints-medimascotas`:** Desarrollo completo de la arquitectura modular (controladores, enrutadores, persistencia relacional en memoria y suite de pruebas):
-     ```
-     [feature/enoc-endpoints-medimascotas e926526] feat(enoc): implementacion de controladores, rutas y reglas de negocio RN-01 a RN-15 con tests
-     ```
-
-3. **Arquitectura Modular Implementada:**
-   - `src/data/store.js`: Persistencia estructurada en memoria con integridad referencial, autoincrementables y datos semilla (veterinario Dr. Santiago Avila, propietarios Brayan Forero y Deivi Rodriguez, pacientes Lucas y Mishi).
-   - `src/controllers/`: 6 controladores independientes (`authController`, `propietariosController`, `mascotasController`, `historialesController`, `consultasController`, `vacunasController`).
-   - `src/routes/`: 6 enrutadores modulares agrupados bajo `/api` en `src/routes/index.js`.
-   - Cumplimiento de las 15 Reglas de Negocio (RN-01 a RN-15) extraídas del documento de especificación.
+**Institución:** Corporación Universitaria Minuto de Dios (UNIMINUTO)  
+**Asignatura:** Ingeniería de Software  
+**Integrantes:**
+- **Enoc Tamayo** (Líder / Arquitectura Base, Auth, Propietarios y Base de Datos)
+- **Esteban Fierro** (Desarrollador / Consultas, Tratamientos y Vacunas)
+- **Santiago Avila** (Desarrollador / Mascotas, Historiales, Diagnósticos, Medicamentos y Recordatorios)
 
 ---
 
-## 2. Definición de Endpoints y Entidades
+## 1. Resumen de la Arquitectura Implementada
 
-| Módulo / Entidad | Método | URL | RF / RN | Descripción |
-|---|---|---|---|---|
-| **Root / Salud** | `GET` | `/` | RNF-05 | Estado del servidor y ruta de documentación |
-| | `GET` | `/api` | - | Diccionario de endpoints disponibles |
-| **Auth / Usuarios** | `POST` | `/api/auth/register` | RF-01, CU-01 | Registro de veterinarios, administradores o propietarios |
-| | `POST` | `/api/auth/login` | RF-01, CU-01 | Autenticación y retorno de token |
-| | `GET` | `/api/auth/perfil/:id`| RF-02 | Consulta de perfil de usuario |
-| | `PUT` | `/api/auth/perfil/:id`| RF-02, RF-13 | Actualización de perfil |
-| | `GET` | `/api/auth/usuarios` | - | Listado de usuarios (con filtro `?rol=`) |
-| **Propietarios** | `POST` | `/api/propietarios` | RF-03, CU-02, RN-02 | Registro con documento de identificación único |
-| | `GET` | `/api/propietarios` | RF-03, RF-12 | Listado con búsqueda (`?search=`) |
-| | `GET` | `/api/propietarios/:id` | RF-03 | Detalle de un propietario |
-| | `PUT` | `/api/propietarios/:id` | RF-13 | Edición de contacto y dirección |
-| | `DELETE` | `/api/propietarios/:id` | RF-14 | Inactivación lógica del propietario |
-| | `GET` | `/api/propietarios/:id/mascotas` | RF-03 | Mascotas asociadas al propietario |
-| **Mascotas** | `POST` | `/api/mascotas` | RF-04, CU-03, RN-01, RN-03, RN-04 | Creación de mascota + **autocreación de historial clínico** |
-| | `GET` | `/api/mascotas` | RF-04, RF-12 | Búsqueda por nombre o cédula del dueño (`?search=`) |
-| | `GET` | `/api/mascotas/:id` | RF-04 | Detalle con datos del dueño e historial |
-| | `PUT` | `/api/mascotas/:id` | RF-13 | Actualización de peso, edad, raza |
-| | `DELETE` | `/api/mascotas/:id` | RF-14, RN-11 | **Eliminación lógica** (`activo: false`) si tiene historial |
-| **Historial Clínico**| `GET` | `/api/historiales/:mascotaId` | RF-05, RF-11, CU-05 | Expediente consolidado (consultas, diagnósticos, vacunas) |
-| | `PUT` | `/api/historiales/:mascotaId/antecedentes` | RF-05, RF-13 | Actualizar antecedentes patológicos y alergias |
-| | `GET` | `/api/historiales/:mascotaId/reporte` | RF-15 | Reporte oficial para impresión o aseguradoras |
-| **Consultas** | `POST` | `/api/consultas` | RF-06..09, CU-04, RN-05..09, RN-12 | Registro de consulta con diagnóstico obligatorio |
-| | `GET` | `/api/consultas` | RF-06 | Listado de todas las consultas |
-| | `GET` | `/api/consultas/mascota/:mascotaId` | RF-06, RF-11 | Consultas de una mascota |
-| | `GET` | `/api/consultas/:id` | RF-06 | Detalle de consulta |
-| | `PUT` | `/api/consultas/:id` | RF-13, RN-13 | Modificación de observaciones o estado |
-| **Vacunas** | `POST` | `/api/vacunas` | RF-10, CU-06, RN-10, RN-15 | Registro de vacuna aplicada |
-| | `GET` | `/api/vacunas/mascota/:mascotaId` | RF-10, RF-11 | Carnet de vacunación de la mascota |
-| | `GET` | `/api/vacunas` | RF-10 | Listado general de vacunas aplicadas |
+El proyecto implementa una **arquitectura monolítica modular MVC (Modelo - Vista / API - Controlador)** construida con:
+- **Node.js + Express 5** (`express: ^5.2.1`, `commonjs`).
+- **Base de Datos Relacional MySQL 8.0+** (`mysql2/promise: ^3.24.4`).
+- **Capa de Modelos (`src/models/`):** 10 modelos independientes que encapsulan la persistencia y reglas de negocio, con fallback automático de alta disponibilidad a almacenamiento relacional en memoria si la instancia de base de datos no está disponible.
+- **Capa de Controladores (`src/controllers/`):** 10 controladores desacoplados encargados de la lógica de aplicación, validaciones HTTP y códigos de estado REST.
+- **Capa de Enrutadores (`src/routes/`):** 10 enrutadores modulares agrupados bajo el prefijo unificado `/api`.
+- **Estrategia Git Multirama:** Reparto equitativo de modelos, controladores y endpoints para los 3 integrantes con ramas `feature/*` individuales.
 
 ---
 
-## 3. Evidencia de Pruebas Automatizadas
+## 2. Mapa Completo de Endpoints y Entidades (10 Módulos)
 
-Se ejecutó la suite completa con el comando:
+| Módulo / Entidad | Método | URL | RF / RN Asociado | Integrante Responsable | Descripción |
+|---|---|---|---|---|---|
+| **Root / Salud** | `GET` | `/` | RNF-05 | General | Estado del servidor y enlaces |
+| | `GET` | `/api` | - | General | Diccionario de 10 endpoints REST |
+| **Auth / Usuarios** | `POST` | `/api/auth/register` | RF-01, CU-01 | Enoc Tamayo | Registro de veterinarios/admins |
+| | `POST` | `/api/auth/login` | RF-01, CU-01 | Enoc Tamayo | Login y retorno de token |
+| | `GET` | `/api/auth/perfil/:id` | RF-02 | Enoc Tamayo | Consulta de perfil |
+| | `PUT` | `/api/auth/perfil/:id` | RF-02, RF-13 | Enoc Tamayo | Modificación de perfil |
+| | `GET` | `/api/auth/usuarios` | RNF-13 | Enoc Tamayo | Listado de usuarios con filtro `?rol=` |
+| **Propietarios** | `POST` | `/api/propietarios` | RF-03, RN-02 | Enoc Tamayo | Registro con identificación única |
+| | `GET` | `/api/propietarios` | RF-03, RF-12 | Enoc Tamayo | Búsqueda por nombre o cédula |
+| | `GET` | `/api/propietarios/:id` | RF-03 | Enoc Tamayo | Detalle de propietario |
+| | `PUT` | `/api/propietarios/:id` | RF-13 | Enoc Tamayo | Edición de contacto y dirección |
+| | `DELETE` | `/api/propietarios/:id` | RF-14 | Enoc Tamayo | Inactivación lógica del tutor |
+| | `GET` | `/api/propietarios/:id/mascotas` | RF-03 | Enoc Tamayo | Mascotas asociadas al propietario |
+| **Mascotas** | `POST` | `/api/mascotas` | RF-04, RN-01, RN-04 | Santiago Avila | Registro + autocreación de historial |
+| | `GET` | `/api/mascotas` | RF-04, RF-12 | Santiago Avila | Búsqueda por nombre o cédula dueño |
+| | `GET` | `/api/mascotas/:id` | RF-04 | Santiago Avila | Detalle con datos de tutor e historial |
+| | `PUT` | `/api/mascotas/:id` | RF-13 | Santiago Avila | Edición de peso, edad, raza |
+| | `DELETE` | `/api/mascotas/:id` | RF-14, RN-11 | Santiago Avila | **Eliminación lógica** si tiene historial |
+| **Historiales** | `GET` | `/api/historiales/:mascotaId` | RF-05, RF-11 | Santiago Avila | Expediente clínico unificado |
+| | `PUT` | `/api/historiales/:mascotaId/antecedentes` | RF-05, RF-13 | Santiago Avila | Actualizar antecedentes y alergias |
+| | `GET` | `/api/historiales/:mascotaId/reporte` | RF-15 | Santiago Avila | Reporte clínico oficial consolidado |
+| **Consultas** | `POST` | `/api/consultas` | RF-06, RN-05..07 | Esteban Fierro | Registro de consulta con diagnóstico |
+| | `GET` | `/api/consultas` | RF-06 | Esteban Fierro | Listado de todas las consultas |
+| | `GET` | `/api/consultas/:id` | RF-06 | Esteban Fierro | Detalle de consulta |
+| | `GET` | `/api/consultas/mascota/:mascotaId` | RF-06 | Esteban Fierro | Consultas de una mascota |
+| | `PUT` | `/api/consultas/:id` | RF-13 | Esteban Fierro | Actualización de observaciones o estado |
+| **Diagnósticos** | `POST` | `/api/diagnosticos` | RF-07, RN-07 | Santiago Avila | Registro de diagnóstico en consulta |
+| | `GET` | `/api/diagnosticos` | RF-07 | Santiago Avila | Listado general de diagnósticos |
+| | `GET` | `/api/diagnosticos/:id` | RF-07 | Santiago Avila | Detalle de diagnóstico |
+| | `GET` | `/api/diagnosticos/consulta/:consultaId` | RF-07 | Santiago Avila | Diagnósticos por consulta |
+| | `PUT` | `/api/diagnosticos/:id` | RF-13 | Santiago Avila | Actualizar descripción o gravedad |
+| | `DELETE` | `/api/diagnosticos/:id` | RF-14 | Santiago Avila | Eliminar diagnóstico |
+| **Tratamientos** | `POST` | `/api/tratamientos` | RF-08, RN-08 | Esteban Fierro | Registro de tratamiento vinculado a diagnóstico |
+| | `GET` | `/api/tratamientos` | RF-08 | Esteban Fierro | Listado de tratamientos |
+| | `GET` | `/api/tratamientos/:id` | RF-08 | Esteban Fierro | Detalle de tratamiento |
+| | `GET` | `/api/tratamientos/diagnostico/:diagnosticoId` | RF-08 | Esteban Fierro | Tratamientos de un diagnóstico |
+| | `PUT` | `/api/tratamientos/:id` | RF-13 | Esteban Fierro | Actualizar duración o descripción |
+| | `DELETE` | `/api/tratamientos/:id` | RF-14 | Esteban Fierro | Eliminar tratamiento |
+| **Medicamentos** | `POST` | `/api/medicamentos` | RF-09, RN-09 | Santiago Avila | Formular medicamento en consulta |
+| | `GET` | `/api/medicamentos` | RF-09 | Santiago Avila | Listado de medicamentos formulados |
+| | `GET` | `/api/medicamentos/:id` | RF-09 | Santiago Avila | Detalle de formulación |
+| | `GET` | `/api/medicamentos/consulta/:consultaId` | RF-09 | Santiago Avila | Medicamentos formulados en consulta |
+| | `PUT` | `/api/medicamentos/:id` | RF-13 | Santiago Avila | Modificar posología o indicaciones |
+| | `DELETE` | `/api/medicamentos/:id` | RF-14 | Santiago Avila | Eliminar medicamento |
+| **Vacunas** | `POST` | `/api/vacunas` | RF-10, RN-10 | Esteban Fierro | Registro de vacuna en carnet |
+| | `GET` | `/api/vacunas` | RF-10 | Esteban Fierro | Listado general de vacunas |
+| | `GET` | `/api/vacunas/:id` | RF-10 | Esteban Fierro | Detalle de vacuna |
+| | `GET` | `/api/vacunas/mascota/:mascotaId` | RF-10, RF-11 | Esteban Fierro | Carnet de vacunación de la mascota |
+| **Recordatorios** | `POST` | `/api/recordatorios` | Doc. Oficial | Santiago Avila | Programar alerta de cita/vacuna/tratamiento |
+| | `GET` | `/api/recordatorios` | Doc. Oficial | Santiago Avila | Listado general con filtro `?estado=` |
+| | `GET` | `/api/recordatorios/:id` | Doc. Oficial | Santiago Avila | Detalle de recordatorio |
+| | `GET` | `/api/recordatorios/mascota/:mascotaId` | Doc. Oficial | Santiago Avila | Recordatorios de una mascota |
+| | `PUT` | `/api/recordatorios/:id` | Doc. Oficial | Santiago Avila | Marcar completado o modificar fecha |
+| | `DELETE` | `/api/recordatorios/:id` | Doc. Oficial | Santiago Avila | Eliminar recordatorio |
+
+---
+
+## 3. Base de Datos Relacional MySQL (`medimascotas_db`)
+
+El archivo `database/schema.sql` contiene la estructura completa con 10 tablas relacionadas mediante claves foráneas con integridad referencial:
+
+1. `usuarios` (Autenticación y roles: admin, veterinario, propietario)
+2. `propietarios` (Tutores con identificación única)
+3. `mascotas` (Pacientes vinculados a un propietario)
+4. `historiales_medicos` (Expediente 1 a 1 por mascota)
+5. `consultas` (Atenciones médicas vinculadas a mascota y veterinario)
+6. `diagnosticos` (Diagnósticos por consulta)
+7. `tratamientos` (Tratamientos vinculados a diagnósticos)
+8. `medicamentos` (Formulaciones dentro de consulta)
+9. `vacunas` (Esquema de inmunización por mascota)
+10. `recordatorios` (Alertas automáticas de seguimiento médico)
+
+Para inicializar la base de datos en cualquier servidor MySQL:
 ```bash
-npm test
-```
-
-### Resultados de Ejecución
-
-```text
-> actividad_node@1.0.0 test
-> node tests/api.test.js
-
-======================================================
-🧪 INICIANDO SUITE DE PRUEBAS AUTOMATIZADAS MEDIMASCOTAS
-======================================================
-
-Servidor de pruebas escuchando en http://localhost:49924
-
-  ✓ [PASS] 1. GET / - Servidor responde 200 con estado OK
-  ✓ [PASS] 2. GET /api - Servidor retorna mapa de endpoints REST
-  ✓ [PASS] 3. POST /api/auth/register - Registro de nuevo usuario (RF-01, CU-01)
-  ✓ [PASS] 4. POST /api/auth/login - Inicio de sesion correcto (RF-01, CU-01)
-  ✓ [PASS] 5. POST /api/propietarios - Registrar nuevo propietario (RF-03, CU-02)
-  ✓ [PASS] 6. RN-02: Validar rechazo de propietario con documento duplicado
-  ✓ [PASS] 7. POST /api/mascotas - Registrar mascota y autogenerar historial (RF-04, CU-03, RN-04)
-  ✓ [PASS] 8. RN-01: Rechazo de registro de mascota sin propietario valido
-  ✓ [PASS] 9. GET /api/mascotas?search=... - Busqueda por nombre o documento tutor (RF-12)
-  ✓ [PASS] 10. POST /api/consultas - Registrar consulta valida con diagnostico (RF-06, RF-07, CU-04, RN-07)
-  ✓ [PASS] 11. RN-07: Rechazo de consulta sin diagnosticos obligatorios
-  ✓ [PASS] 12. RN-05: Rechazo de consulta para mascota inexistente
-  ✓ [PASS] 13. POST /api/vacunas - Registrar vacuna en carnet (RF-10, CU-06, RN-10)
-  ✓ [PASS] 14. RN-10: Rechazo de vacuna para mascota no registrada
-  ✓ [PASS] 15. GET /api/historiales/:mascotaId - Ficha clinica consolidada (RF-11, CU-05)
-  ✓ [PASS] 16. GET /api/historiales/:mascotaId/reporte - Reporte clinico oficial (RF-15)
-  ✓ [PASS] 17. DELETE /api/mascotas/:id - RN-11: Borrado logico de mascota con historial
-  ✓ [PASS] 18. GET /ruta-inexistente - Manejador 404 estructurado
-
-------------------------------------------------------
-📊 RESULTADOS FINALES: 18 de 18 pruebas aprobadas exitosamente.
-------------------------------------------------------
+npm run db:init
 ```
 
 ---
 
-## 4. Guía de Conexión a GitHub para Enoc y su Equipo
+## 4. Resultados de Pruebas Automatizadas
 
-### Paso 1: Enoc (Líder) sube el proyecto a GitHub
-1. Ve a [GitHub](https://github.com/new) y crea un nuevo repositorio llamado `medimascotas-backend` (o `actividad_node`). Déjalo vacío (sin agregar README ni .gitignore porque ya los tenemos).
-2. En la terminal dentro de `medimascotas-api`, vincula tu repositorio remoto reemplazando `TU_USUARIO`:
-   ```bash
-   git remote add origin https://github.com/TU_USUARIO/medimascotas-backend.git
-   ```
-3. Sube la rama base `main` (que contiene la versión limpia solicitada por el profesor):
-   ```bash
-   git checkout main
-   git push -u origin main
-   ```
-4. Sube tu rama de trabajo con todos los endpoints y controladores:
-   ```bash
-   git checkout feature/enoc-endpoints-medimascotas
-   git push -u origin feature/enoc-endpoints-medimascotas
-   ```
+Se ejecutan con:
+```bash
+node tests/api.test.js
+```
 
-### Paso 2: Instrucciones para tus compañeros (Santiago, Brayan, Deivi)
-Cuando tus compañeros vayan a trabajar:
-1. **Clonar el proyecto:**
-   ```bash
-   git clone https://github.com/TU_USUARIO/medimascotas-backend.git
-   cd medimascotas-backend
-   npm install
-   ```
-2. **Crear sus ramas individuales:**
-   - Santiago:
-     ```bash
-     git checkout -b feature/santiago-consultas
-     ```
-   - Brayan:
-     ```bash
-     git checkout -b feature/brayan-vacunas
-     ```
-   - Deivi:
-     ```bash
-     git checkout -b feature/deivi-propietarios
-     ```
-3. **Subir sus cambios a GitHub:**
-   ```bash
-   git add .
-   git commit -m "feat(modulo): descripcion de la mejora realizada"
-   git push -u origin feature/nombre-de-su-rama
-   ```
-4. **Pull Request:**
-   En la interfaz de GitHub, abrir el Pull Request hacia `main` para que Enoc (el líder) revise y apruebe el merge.
+**Resultado:** 26 de 26 pruebas aprobadas exitosamente (100% de cobertura funcional).
