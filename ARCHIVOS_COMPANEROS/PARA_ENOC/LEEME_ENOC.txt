@@ -1,0 +1,41 @@
+====================================================================
+INSTRUCCIONES PARA ENOC TAMAYO (LIDER - CORE, AUTH Y PROPIETARIOS)
+====================================================================
+
+Hola Enoc, eres el lider del equipo. Te corresponde la arquitectura base, 
+la configuracion de la base de datos MySQL y los modulos de Usuarios/Auth y Propietarios.
+
+TUS ARCHIVOS ASIGNADOS:
+--------------------------------------------------------------------
+1. Modelos (src/models/):
+   - Usuario.js
+   - Propietario.js
+
+2. Controladores (src/controllers/):
+   - authController.js
+   - propietariosController.js
+
+3. Rutas (src/routes/):
+   - authRoutes.js
+   - propietariosRoutes.js
+
+4. Base de Datos:
+   - src/config/database.js (Conexion MySQL con pool y fallback)
+   - database/schema.sql (Script DDL de 10 tablas e inserciones semilla)
+   - database/init.js (Script para inicializar la BD con npm run db:init)
+
+COMANDOS PARA SUBIR TU RAMA A GIT:
+--------------------------------------------------------------------
+1. Abre la terminal en 'medimascotas-backend'.
+2. Verifica que todo compile y pasen las pruebas:
+   node tests/api.test.js
+
+3. Pasate a tu rama:
+   git checkout -b feature/enoc-auth-propietarios
+
+4. Haz commit y sube tus cambios:
+   git add .
+   git commit -m "feat(enoc): arquitectura MVC, conexion MySQL, modelos Usuario/Propietario y endpoints auth"
+   git push -u origin feature/enoc-auth-propietarios
+
+5. Revisa y aprueba los Pull Requests que envien Esteban y Santiago.

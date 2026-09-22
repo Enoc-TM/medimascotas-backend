@@ -1,6 +1,7 @@
 // src/data/store.js
-// Almacenamiento en memoria para simular la persistencia relacional MySQL
+// Almacenamiento en memoria para simular y respaldar la persistencia relacional MySQL
 // con soporte para integridad referencial y las 15 Reglas de Negocio (RN-01 a RN-15).
+// Autores del equipo: Enoc Tamayo, Esteban Fierro, Santiago Avila
 
 class DataStore {
   constructor() {
@@ -17,7 +18,8 @@ class DataStore {
       diagnosticos: 1,
       tratamientos: 1,
       medicamentos: 1,
-      vacunas: 1
+      vacunas: 1,
+      recordatorios: 1
     };
 
     this.usuarios = [
@@ -32,8 +34,8 @@ class DataStore {
       },
       {
         id: this.counters.usuarios++,
-        nombre: 'Enoc Administrador',
-        email: 'enoc.admin@medimascotas.com',
+        nombre: 'Enoc Tamayo',
+        email: 'enoc.tamayo@medimascotas.com',
         password: 'AdminPassword123!',
         rol: 'admin',
         telefono: '3129876543',
@@ -41,8 +43,8 @@ class DataStore {
       },
       {
         id: this.counters.usuarios++,
-        nombre: 'Brayan Andres Forero',
-        email: 'brayan.forero@gmail.com',
+        nombre: 'Esteban Fierro',
+        email: 'esteban.fierro@medimascotas.com',
         password: 'UserPass123!',
         rol: 'propietario',
         telefono: '3157778899',
@@ -54,19 +56,19 @@ class DataStore {
       {
         id: this.counters.propietarios++,
         identificacion: '1010203040',
-        nombre: 'Brayan Andres Forero',
+        nombre: 'Esteban Fierro',
         telefono: '3157778899',
         direccion: 'Calle 45 # 12-34, Bogota',
-        email: 'brayan.forero@gmail.com',
+        email: 'esteban.fierro@gmail.com',
         activo: true
       },
       {
         id: this.counters.propietarios++,
         identificacion: '1098765432',
-        nombre: 'Deivi Andrey Rodriguez',
+        nombre: 'Enoc Tamayo',
         telefono: '3164445566',
         direccion: 'Carrera 15 # 80-20, Bogota',
-        email: 'deivi.rodriguez@gmail.com',
+        email: 'enoc.tamayo@gmail.com',
         activo: true
       }
     ];
@@ -119,6 +121,39 @@ class DataStore {
       }
     ];
 
+    this.diagnosticos = [
+      {
+        id: this.counters.diagnosticos++,
+        consulta_id: 1,
+        descripcion: 'Paciente sano en optimas condiciones generales',
+        gravedad: 'leve',
+        fecha: '2026-02-15'
+      }
+    ];
+
+    this.tratamientos = [
+      {
+        id: this.counters.tratamientos++,
+        diagnostico_id: 1,
+        descripcion: 'Mantener dieta balanceada y ejercicio moderado',
+        duracion: 'Permanente',
+        fecha_inicio: '2026-02-15',
+        fecha_fin: null
+      }
+    ];
+
+    this.medicamentos = [
+      {
+        id: this.counters.medicamentos++,
+        consulta_id: 1,
+        nombre: 'Suplemento de Omega 3',
+        dosis: '1 capsula diaria',
+        frecuencia: 'Cada 24 horas',
+        duracion: '30 dias',
+        indicaciones: 'Administrar junto con el alimento de la manana'
+      }
+    ];
+
     this.consultas = [
       {
         id: this.counters.consultas++,
@@ -130,34 +165,9 @@ class DataStore {
         hora: '10:30',
         motivo: 'Revision general y control de peso',
         observaciones: 'El paciente se encuentra animado, pelaje brillante, mucosas normocoloreadas.',
-        diagnosticos: [
-          {
-            id: this.counters.diagnosticos++,
-            descripcion: 'Paciente sano en optimas condiciones generales',
-            gravedad: 'leve',
-            fecha: '2026-02-15'
-          }
-        ],
-        tratamientos: [
-          {
-            id: this.counters.tratamientos++,
-            diagnostico_id: 1,
-            descripcion: 'Mantener dieta balanceada y ejercicio moderado',
-            duracion: 'Permanente',
-            fecha_inicio: '2026-02-15',
-            fecha_fin: null
-          }
-        ],
-        medicamentos: [
-          {
-            id: this.counters.medicamentos++,
-            nombre: 'Suplemento de Omega 3',
-            dosis: '1 capsula diaria',
-            frecuencia: 'Cada 24 horas',
-            duracion: '30 dias',
-            indicaciones: 'Administrar junto con el alimento de la manana'
-          }
-        ],
+        diagnosticos: [this.diagnosticos[0]],
+        tratamientos: [this.tratamientos[0]],
+        medicamentos: [this.medicamentos[0]],
         estado: 'completada'
       }
     ];
@@ -182,6 +192,27 @@ class DataStore {
         proxima_dosis: '2027-02-15',
         veterinario_id: 1,
         observaciones: 'Tolerancia adecuada.'
+      }
+    ];
+
+    this.recordatorios = [
+      {
+        id: this.counters.recordatorios++,
+        mascota_id: 1,
+        tipo: 'vacuna',
+        titulo: 'Proxima dosis de Vacuna Rabia',
+        descripcion: 'Refuerzo anual obligatorio',
+        fecha_recordatorio: '2027-02-15',
+        estado: 'pendiente'
+      },
+      {
+        id: this.counters.recordatorios++,
+        mascota_id: 2,
+        tipo: 'consulta',
+        titulo: 'Chequeo semestral felino',
+        descripcion: 'Revision dental y renal preventiva',
+        fecha_recordatorio: '2026-08-10',
+        estado: 'pendiente'
       }
     ];
   }
