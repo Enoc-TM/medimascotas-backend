@@ -1,8 +1,18 @@
 // src/controllers/authController.js
-// Controlador para autenticacion, registro y perfil de usuarios (RF-01, RF-02, CU-01, RN-12)
+// Controlador para autenticacion y registro publico de usuarios (RF-01, RF-02, CU-01, RN-12)
 // Asignado a: Enoc Tamayo
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
+const userController = require('./userController');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'medimascotas_jwt_secret_key_2026_uniminuto';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+
+/**
+ * URL Publica: POST /api/auth/register
+ * Registro de un nuevo usuario con contrasena encriptada y emision de token JWT
+ */
 exports.register = async (req, res, next) => {
   try {
     const { nombre, email, password, rol = 'propietario', telefono = '' } = req.body;
@@ -20,16 +30,28 @@ exports.register = async (req, res, next) => {
       });
     }
 
+    // Encriptar contrasena con bcrypt
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const nuevoUsuario = await Usuario.create({
       nombre,
       email,
-      password,
+      password: hashedPassword,
       rol,
       telefono
     });
 
+    // Generar token JWT firmado
+    const token = jwt.sign(
+      { id: nuevoUsuario.id, email: nuevoUsuario.email, rol: nuevoUsuario.rol },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
     return res.status(201).json({
       mensaje: 'Usuario registrado exitosamente',
+      token,
       usuario: nuevoUsuario
     });
   } catch (err) {
@@ -37,6 +59,10 @@ exports.register = async (req, res, next) => {
   }
 };
 
+/**
+ * URL Publica: POST /api/auth/login
+ * Inicio de sesion, validacion de contrasena y retorno de token JWT real
+ */
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -49,16 +75,37 @@ exports.login = async (req, res, next) => {
 
     const usuario = await Usuario.findByEmail(email);
 
-    if (!usuario || usuario.password !== password) {
+    if (!usuario) {
       return res.status(401).json({
         error: 'Credenciales invalidas: correo o contrasena incorrectos'
       });
     }
 
+    // Validacion con soporte tanto para bcrypt como para contrasenas semilla en texto plano
+    let passwordValido = false;
+    if (usuario.password && (usuario.password.startsWith('$2a$') || usuario.password.startsWith('$2b$'))) {
+      passwordValido = await bcrypt.compare(password, usuario.password);
+    } else {
+      passwordValido = (usuario.password === password);
+    }
+
+    if (!passwordValido) {
+      return res.status(401).json({
+        error: 'Credenciales invalidas: correo o contrasena incorrectos'
+      });
+    }
+
+    // Generar token JWT firmado
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email, rol: usuario.rol },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
     const { password: _, ...usuarioSinPass } = usuario;
     return res.status(200).json({
       mensaje: 'Inicio de sesion exitoso',
-      token: 'mock-jwt-token-' + usuario.id + '-' + Date.now(),
+      token,
       usuario: usuarioSinPass
     });
   } catch (err) {
@@ -66,44 +113,7 @@ exports.login = async (req, res, next) => {
   }
 };
 
-exports.getPerfil = async (req, res, next) => {
-  try {
-    const usuario = await Usuario.findById(req.params.id);
-
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    const { password: _, ...usuarioSinPass } = usuario;
-    return res.status(200).json(usuarioSinPass);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.updatePerfil = async (req, res, next) => {
-  try {
-    const usuarioActualizado = await Usuario.update(req.params.id, req.body);
-
-    if (!usuarioActualizado) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    return res.status(200).json({
-      mensaje: 'Perfil actualizado correctamente',
-      usuario: usuarioActualizado
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.getUsuarios = async (req, res, next) => {
-  try {
-    const { rol } = req.query;
-    const usuarios = await Usuario.findAll({ rol });
-    return res.status(200).json(usuarios);
-  } catch (err) {
-    next(err);
-  }
-};
+// Delegaciones a userController para retrocompatibilidad
+exports.getPerfil = userController.getPerfil;
+exports.updatePerfil = userController.updatePerfil;
+exports.getUsuarios = userController.getUsuarios;

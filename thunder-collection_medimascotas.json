@@ -1,0 +1,121 @@
+{
+  "clientName": "Thunder Client",
+  "collectionName": "MediMascotas - Autenticación y Protección JWT",
+  "collectionId": "medimascotas-jwt",
+  "dateExported": "2026-10-12",
+  "version": "1.2",
+  "folders": [
+    {
+      "name": "1. Rutas Públicas (Sin Token)",
+      "sortNum": 10000
+    },
+    {
+      "name": "2. Rutas Privadas (Requieren Bearer Token)",
+      "sortNum": 20000
+    }
+  ],
+  "requests": [
+    {
+      "name": "1.1 Registro de Usuario (Register)",
+      "method": "POST",
+      "url": "http://localhost:3000/api/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"nombre\": \"Dr. Juan Perez\",\n  \"email\": \"juan.perez@medimascotas.com\",\n  \"password\": \"MiClave123!\",\n  \"rol\": \"veterinario\",\n  \"telefono\": \"3101234567\"\n}"
+      }
+    },
+    {
+      "name": "1.2 Inicio de Sesión (Login) - Copia el token aquí",
+      "method": "POST",
+      "url": "http://localhost:3000/api/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"juan.perez@medimascotas.com\",\n  \"password\": \"MiClave123!\"\n}"
+      }
+    },
+    {
+      "name": "1.3 Perfil Público (Sin Token)",
+      "method": "GET",
+      "url": "http://localhost:3000/api/users/public-profile/1",
+      "headers": []
+    },
+    {
+      "name": "2.1 Perfil Privado SIN Token (Rechazo 401)",
+      "method": "GET",
+      "url": "http://localhost:3000/api/users/profile",
+      "headers": []
+    },
+    {
+      "name": "2.2 Perfil Privado CON Token (Acceso 200)",
+      "method": "GET",
+      "url": "http://localhost:3000/api/users/profile",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer PEGA_TU_TOKEN_AQUI"
+        }
+      ]
+    },
+    {
+      "name": "2.3 Dashboard Privado (Métricas del Sistema)",
+      "method": "GET",
+      "url": "http://localhost:3000/api/users/dashboard",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer PEGA_TU_TOKEN_AQUI"
+        }
+      ]
+    },
+    {
+      "name": "2.4 Actualizar Perfil (Modificar datos)",
+      "method": "PUT",
+      "url": "http://localhost:3000/api/users/update",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer PEGA_TU_TOKEN_AQUI"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"nombre\": \"Dr. Juan Perez Actualizado\",\n  \"telefono\": \"3209998877\"\n}"
+      }
+    },
+    {
+      "name": "2.5 Cambiar Contraseña (Validar y cifrar)",
+      "method": "POST",
+      "url": "http://localhost:3000/api/users/change-password",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer PEGA_TU_TOKEN_AQUI"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"oldPassword\": \"MiClave123!\",\n  \"newPassword\": \"NuevaClaveSegura2026!\"\n}"
+      }
+    }
+  ]
+}

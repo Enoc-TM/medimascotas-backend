@@ -89,6 +89,8 @@ async function runTests() {
     assert.strictEqual(res.data.usuario.password, undefined);
   });
 
+  let authToken = '';
+
   await test('4. POST /api/auth/login - Inicio de sesion correcto (RF-01, CU-01)', async () => {
     const res = await request('/api/auth/login', {
       method: 'POST',
@@ -99,6 +101,7 @@ async function runTests() {
     });
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.token);
+    authToken = res.data.token;
   });
 
   await test('5. POST /api/propietarios - Registrar nuevo propietario (RF-03, CU-02)', async () => {
@@ -386,6 +389,79 @@ async function runTests() {
     assert.strictEqual(res.data.error, 'Ruta no encontrada');
   });
 
+  // --- PRUEBAS DE RUTAS PRIVADAS Y MIDDLEWARE JWT ---
+
+  await test('27. Rutas Privadas: Rechazo 401 sin token en /api/user/perfil', async () => {
+    const res = await request('/api/user/perfil');
+    assert.strictEqual(res.status, 401);
+    assert.ok(res.data.error || res.data.mensaje);
+  });
+
+  await test('28. Rutas Privadas: Rechazo 403 con token invalido o manipulado', async () => {
+    const res = await request('/api/user/perfil', {
+      headers: {
+        'Authorization': 'Bearer token_invalido_totalmente_falso_12345'
+      }
+    });
+    assert.strictEqual(res.status, 403);
+    assert.ok(res.data.error || res.data.mensaje);
+  });
+
+  await test('29. Rutas Privadas: Acceso 200 con Bearer token valido a /api/user/perfil/1', async () => {
+    const res = await request('/api/user/perfil/1', {
+      headers: {
+        'Authorization': 'Bearer ' + authToken
+      }
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.id, 1);
+    assert.strictEqual(res.data.password, undefined);
+  });
+
+  await test('30. Rutas Privadas: Acceso 200 con Bearer token valido a /api/user/usuarios', async () => {
+    const res = await request('/api/user/usuarios', {
+      headers: {
+        'Authorization': 'Bearer ' + authToken
+      }
+    });
+    assert.strictEqual(res.status, 200);
+    assert.ok(Array.isArray(res.data));
+    assert.ok(res.data.length >= 1);
+  });
+
+  await test('31. Rutas Públicas: GET /api/user/public-profile/1 responde 200 sin token', async () => {
+    const res = await request('/api/user/public-profile/1');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.id, 1);
+    assert.strictEqual(res.data.password, undefined);
+  });
+
+  await test('32. Rutas Privadas: GET /api/user/dashboard responde 200 con Bearer token', async () => {
+    const res = await request('/api/user/dashboard', {
+      headers: {
+        'Authorization': 'Bearer ' + authToken
+      }
+    });
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.data.user);
+    assert.ok(res.data.estadisticas);
+  });
+
+  await test('33. Rutas Privadas: POST /api/user/change-password valida contraseña y responde 200', async () => {
+    const res = await request('/api/user/change-password', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + authToken
+      },
+      body: {
+        oldPassword: 'ClaveSegura2026!',
+        newPassword: 'NuevaClaveSegura2026!'
+      }
+    });
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.data.message);
+  });
+
   await new Promise(resolve => server.close(resolve));
 
   console.log('\n------------------------------------------------------');
@@ -395,6 +471,7 @@ async function runTests() {
   if (passedTests !== totalTests) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runTests().catch(err => {

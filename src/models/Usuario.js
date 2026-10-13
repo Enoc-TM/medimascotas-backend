@@ -117,6 +117,42 @@ class Usuario {
     const { password: _, ...sinPass } = usuario;
     return sinPass;
   }
+
+  static async delete(id) {
+    const numId = parseInt(id, 10);
+    if (db.isDbConnected()) {
+      try {
+        await db.query('DELETE FROM usuarios WHERE id = ?', [numId]);
+        return true;
+      } catch (err) {
+        console.warn('Fallback a store en Usuario.delete:', err.message);
+      }
+    }
+    const idx = store.usuarios.findIndex(u => u.id === numId);
+    if (idx !== -1) {
+      store.usuarios.splice(idx, 1);
+      return true;
+    }
+    return false;
+  }
+
+  static async changePassword(id, newHashedPassword) {
+    const numId = parseInt(id, 10);
+    if (db.isDbConnected()) {
+      try {
+        await db.query('UPDATE usuarios SET password = ? WHERE id = ?', [newHashedPassword, numId]);
+        return true;
+      } catch (err) {
+        console.warn('Fallback a store en Usuario.changePassword:', err.message);
+      }
+    }
+    const usuario = store.usuarios.find(u => u.id === numId);
+    if (usuario) {
+      usuario.password = newHashedPassword;
+      return true;
+    }
+    return false;
+  }
 }
 
 module.exports = Usuario;
