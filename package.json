@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "frontend": "npm run dev --prefix ../medimascotas-frontend",
+    "client": "npm run dev --prefix ../medimascotas-frontend",
     "test": "node tests/api.test.js",
     "db:init": "node database/init.js"
   },

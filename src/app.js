@@ -2,15 +2,21 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
+// Inicializar express
+const app = express();
+
 // Enrutadores
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const apiRoutes = require('./routes/index');
 
-const app = express();
+// CORS: antes de las rutas
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Middlewares globales
-app.use(cors());
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
@@ -29,6 +35,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 // 2. Rutas Privadas: Perfil y Usuarios (protegidas con el middleware de token)
+app.use('/api/users', userRoutes);
 app.use('/api/user', userRoutes);
 
 // 3. Modulos de la veterinaria (Mascotas, Consultas, Vacunas, etc.)
@@ -36,7 +43,7 @@ app.use('/api', apiRoutes);
 
 // Manejo de error 404
 app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada' });
+  res.status(404).json({ error: 'Ruta no encontrada', metodo: req.method, url: req.originalUrl });
 });
 
 // Manejo de errores 500
