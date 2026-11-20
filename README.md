@@ -4,7 +4,7 @@ Plataforma web integral para la gestión y seguimiento del historial clínico de
 
 ---
 
-## 📁 Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```text
 medimascotas/
@@ -23,11 +23,6 @@ medimascotas/
 ```
 
 ---
-
-## 👥 Modelo de Clientes y Mascotas Relacionales
-El sistema soporta la administración de múltiples clientes y la vinculación de sus mascotas:
-* **Cliente 1 (Esteban Fierro - C.C. 1010203040):** Lucas (Golden Retriever) y Rocky (Labrador).
-* **Cliente 2 (Enoc Tamayo - C.C. 1098765432):** Mishi (Siamés) y Zeus (Pastor Alemán).
 
 ---
 
@@ -51,14 +46,14 @@ La aplicación web abrirá en `http://localhost:5173`.
 
 ---
 
-## 🌐 Arquitectura de Despliegue en Producción
+## Arquitectura de Despliegue en Producción
 * **Base de Datos:** MySQL Relacional (con almacén tolerante a fallos para alta disponibilidad)
 * **Backend:** Render (`https://medimascotas-backend.onrender.com`)
 * **Frontend:** Vercel (`https://medimascotas-frontend.vercel.app`)
 
 ---
 
-## 👥 Integrantes
+## Integrantes
 * Enoc Tamayo
 * Santiago Ávila
 * Esteban Fierro
